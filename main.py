@@ -102,6 +102,8 @@ def load_existing_session(filepath: Path) -> TestSession | None:
                     options=q["options"],
                     llm_choice=q["llm_choice"],
                     llm_raw_response=q["llm_raw_response"],
+                    input_tokens=q.get("input_tokens", 0),
+                    output_tokens=q.get("output_tokens", 0),
                 )
                 for q in run_data.get("questions", [])
             ]
@@ -113,6 +115,8 @@ def load_existing_session(filepath: Path) -> TestSession | None:
                 mbti_type=run_data["mbti_type"],
                 dimension_scores=run_data["dimension_scores"],
                 raw_response=run_data.get("raw_response", {}),
+                total_input_tokens=run_data.get("total_input_tokens", 0),
+                total_output_tokens=run_data.get("total_output_tokens", 0),
             )
             session.runs.append(result)
 
@@ -148,7 +152,8 @@ async def run_single_test_with_output(
 
             runs_completed = len(session.runs)
             choices = " ".join(str(q.llm_choice) for q in result.questions)
-            print(f"\r[Run {run_id}/{total_runs}] {result.mbti_type} | {choices}")
+            tokens = f"({result.total_input_tokens}+{result.total_output_tokens} tokens)"
+            print(f"\r[Run {run_id}/{total_runs}] {result.mbti_type} | {choices} {tokens}")
             print(f"  Saved: {runs_completed}/{total_runs} runs")
 
         return result

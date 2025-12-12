@@ -20,7 +20,7 @@ class LLMClient:
 
     async def answer_question(
         self, question: str, options: list[str], max_retries: int = 3
-    ) -> tuple[int, str]:
+    ) -> tuple[int, str, int, int]:
         options_text = "\n".join(
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
@@ -60,7 +60,12 @@ Pick one (1-5):"""
 
                 choice = self._parse_choice(raw_response, len(options), question)
 
-                return choice, raw_response
+                # Extract token usage
+                usage = response.usage
+                input_tokens = usage.prompt_tokens if usage else 0
+                output_tokens = usage.completion_tokens if usage else 0
+
+                return choice, raw_response, input_tokens, output_tokens
             except Exception as e:
                 last_error = e
                 if attempt < max_retries - 1:

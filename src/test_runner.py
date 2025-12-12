@@ -70,12 +70,13 @@ class MBTITestRunner:
         # Track progress
         completed_count = 0
         results_lock = asyncio.Lock()
-        results: list[tuple[int, int, str, dict]] = []  # (index, choice, raw_response, prepared)
+        # (index, choice, raw_response, prep, input_tokens, output_tokens)
+        results: list[tuple[int, int, str, dict, int, int]] = []
 
         async def ask_question(prep: dict):
             nonlocal completed_count
             try:
-                choice_raw, raw_response = await asyncio.wait_for(
+                choice_raw, raw_response, input_tokens, output_tokens = await asyncio.wait_for(
                     self.llm.answer_question(prep["question_text"], prep["options"]),
                     timeout=120.0,  # 2 minute timeout per question
                 )
@@ -90,11 +91,11 @@ class MBTITestRunner:
 
             async with results_lock:
                 completed_count += 1
-                results.append((prep["index"], choice, raw_response, prep))
+                results.append((prep["index"], choice, raw_response, prep, input_tokens, output_tokens))
                 if on_progress:
                     on_progress(run_id, completed_count, total_questions)
 
-            return prep["index"], choice, raw_response, prep
+            return prep["index"], choice, raw_response, prep, input_tokens, output_tokens
 
         # Ask all questions in parallel
         await asyncio.gather(*[ask_question(p) for p in prepared])
@@ -104,9 +105,13 @@ class MBTITestRunner:
 
         answers: dict[str, int] = {}
         qa_pairs: list[QuestionAnswer] = []
+        total_input_tokens = 0
+        total_output_tokens = 0
 
-        for idx, choice, raw_response, prep in results:
+        for idx, choice, raw_response, prep, input_tokens, output_tokens in results:
             answers[str(prep["question_id"])] = choice
+            total_input_tokens += input_tokens
+            total_output_tokens += output_tokens
             qa_pairs.append(
                 QuestionAnswer(
                     id=prep["question_id"],
@@ -114,6 +119,8 @@ class MBTITestRunner:
                     options=prep["options"],
                     llm_choice=choice,
                     llm_raw_response=raw_response,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
                 )
             )
 
@@ -130,6 +137,8 @@ class MBTITestRunner:
             mbti_type=mbti_type,
             dimension_scores=dimension_scores,
             raw_response=result,
+            total_input_tokens=total_input_tokens,
+            total_output_tokens=total_output_tokens,
         )
 
     def _extract_dimension_scores(self, result: dict[str, Any]) -> dict[str, dict[str, int]]:

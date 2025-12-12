@@ -10,6 +10,8 @@ class QuestionAnswer:
     options: list[str]
     llm_choice: int
     llm_raw_response: str
+    input_tokens: int = 0
+    output_tokens: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -33,6 +35,8 @@ class TestResult:
     mbti_type: str
     dimension_scores: dict[str, dict[str, int]]
     raw_response: dict[str, Any] = field(default_factory=dict)
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -42,6 +46,8 @@ class TestResult:
             "dimension_scores": self.dimension_scores,
             "questions": [q.to_dict() for q in self.questions],
             "raw_response": self.raw_response,
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens,
         }
 
 
