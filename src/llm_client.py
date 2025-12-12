@@ -115,7 +115,7 @@ Reply with ONLY the numbers, one per line (e.g., "3" or "1"), in order from ques
                         {"role": "user", "content": prompt},
                     ],
                     temperature=self.temperature,
-                    max_tokens=1024,  # Enough for 32 single-digit answers + some text
+                    max_tokens=10240,  # High limit for verbose models like Gemini
                 )
 
                 message = response.choices[0].message
