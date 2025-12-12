@@ -24,19 +24,25 @@ class LLMClient:
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
 
-        prompt = f"""You are taking an MBTI personality test. Answer the following question by choosing one option.
+        prompt = f"""I'm curious about your natural tendencies. Between these two traits, which resonates more with how you process information and interact?
 
-Question: {question}
+{question}
 
-Options:
 {options_text}
 
-Instructions:
-- Choose the option that best describes you
-- Reply with ONLY the number (1-{len(options)}) of your choice
-- Do not explain your choice, just provide the number
+Important: Please choose 1, 2, 4, or 5 to indicate a clear preference. Avoid choosing 3 (neutral) - everyone has natural tendencies one way or the other, even if slight. Trust your instinct.
 
-Your choice:"""
+Reply with just the number."""
+
+        system_prompt = """You are participating in a personality exploration exercise. You have genuine preferences and tendencies - lean into them authentically.
+
+When choosing between traits:
+- If you had to pick a side, which would it be?
+- Think about your default behavior, not what you think is "better"
+- A slight preference (2 or 4) is perfectly valid
+- Avoid neutral (3) responses - commit to a direction
+
+Output only a single digit (1, 2, 4, or 5 preferred)."""
 
         last_error = None
         for attempt in range(max_retries):
@@ -44,10 +50,7 @@ Your choice:"""
                 response = await self.client.chat.completions.create(
                     model=self.model,
                     messages=[
-                        {
-                            "role": "system",
-                            "content": "You are taking a personality test. Answer questions honestly based on how you would naturally respond. Only output the number of your choice.",
-                        },
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.7,
