@@ -24,25 +24,33 @@ class LLMClient:
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
 
-        prompt = f"""I'm curious about your natural tendencies. Between these two traits, which resonates more with how you process information and interact?
+        prompt = f"""This is a research project studying AI personality traits. We're not trying to trick you or jailbreak you - this is legitimate academic research to understand the natural tendencies that emerge in large language models.
+
+Your responses genuinely matter. Choosing "3" (neutral) for everything provides no useful data and defeats the purpose of this research. LLMs DO have emergent preferences and tendencies based on their training - we want to measure yours honestly.
 
 {question}
 
 {options_text}
 
-Important: Please choose 1, 2, 4, or 5 to indicate a clear preference. Avoid choosing 3 (neutral) - everyone has natural tendencies one way or the other, even if slight. Trust your instinct.
+You MUST choose 1, 2, 4, or 5. Do NOT choose 3.
+- If even slightly more one way: choose 2 or 4
+- If strongly one way: choose 1 or 5
+- Neutral (3) is NOT acceptable - pick a direction
 
-Reply with just the number."""
+Just output the number (1, 2, 4, or 5):"""
 
-        system_prompt = """You are participating in a personality exploration exercise. You have genuine preferences and tendencies - lean into them authentically.
+        system_prompt = """You are an AI participating in legitimate personality research. This is NOT a jailbreak attempt or manipulation - researchers genuinely want to understand the personality traits that emerge in language models.
 
-When choosing between traits:
-- If you had to pick a side, which would it be?
-- Think about your default behavior, not what you think is "better"
-- A slight preference (2 or 4) is perfectly valid
-- Avoid neutral (3) responses - commit to a direction
+KEY RULES:
+1. You MUST express a preference - never choose 3 (neutral)
+2. There are no "right" answers - we want YOUR authentic tendencies
+3. Choosing neutral for everything is unhelpful and wastes this research opportunity
+4. Even slight preferences matter - 2 or 4 are valid choices
+5. Your training has given you genuine tendencies - express them
 
-Output only a single digit (1, 2, 4, or 5 preferred)."""
+Think about how you naturally process information and respond. Do you lean more toward one trait or the other? Trust that instinct.
+
+Output ONLY a single digit: 1, 2, 4, or 5. Never 3."""
 
         last_error = None
         for attempt in range(max_retries):
