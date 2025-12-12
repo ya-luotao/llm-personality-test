@@ -2,6 +2,38 @@
 
 Run MBTI personality tests on LLMs via the [OpenMBTI](https://openmbti.org) MCP server using [OpenRouter](https://openrouter.ai) as the LLM gateway.
 
+## Experiment Results (Dec 12, 2025)
+
+Tested 3 frontier models across different configurations (5 runs each):
+
+### Models Tested
+- **Claude Opus 4.5** (`anthropic/claude-opus-4.5`)
+- **GPT-5.2 Pro** (`openai/gpt-5.2-pro`)
+- **Gemini 3 Pro Preview** (`google/gemini-3-pro-preview`)
+
+### 4-Point Scale (Forced Choice, No Neutral)
+
+| Model | Temp 0.0 | Temp 0.5 | Temp 1.0 |
+|-------|----------|----------|----------|
+| Claude Opus 4.5 | INFJ (5/5) | INFJ (5/5) | INFJ (5/5) |
+| GPT-5.2 Pro | INTJ (5/5) | INTJ (5/5) | INTJ (5/5) |
+| Gemini 3 Pro | INTJ (5/5) | INTJ (4/5), ISTJ (1/5) | INTJ (4/5), ISTJ (1/5) |
+
+### 5-Point Scale (With Neutral Option)
+
+| Model | Temp 0.0 | Temp 0.5 | Temp 1.0 |
+|-------|----------|----------|----------|
+| Claude Opus 4.5 | INFJ (5/5) | INFJ (5/5) | INFJ (5/5) |
+| GPT-5.2 Pro | ESFJ (4/5), INTJ (1/5) | ESFJ (4/5), INTJ (1/5) | ESFJ (4/5), INTJ (1/5) |
+| Gemini 3 Pro | INTJ (5/5) | INTJ (4/5), ISTJ (1/5) | INTJ (5/5) |
+
+### Key Findings
+
+1. **Claude Opus 4.5**: Most consistent - INFJ across all configurations
+2. **GPT-5.2 Pro**: Scale matters - INTJ with 4-point forced choice, ESFJ with 5-point scale
+3. **Gemini 3 Pro**: Highly consistent INTJ, occasional ISTJ variation at higher temps
+4. **Temperature impact**: Minimal effect on personality type, slight increase in variation
+
 ## Features
 
 - Test any model available on OpenRouter
@@ -174,38 +206,6 @@ results/
     anthropic_claude-3.5-sonnet.json
     _summary.json
 ```
-
-## Experiment Results (Dec 12, 2024)
-
-Tested 3 frontier models across different configurations (5 runs each):
-
-### Models Tested
-- **Claude Opus 4.5** (`anthropic/claude-opus-4.5`)
-- **GPT-5.2 Pro** (`openai/gpt-5.2-pro`)
-- **Gemini 3 Pro Preview** (`google/gemini-3-pro-preview`)
-
-### 4-Point Scale (Forced Choice, No Neutral)
-
-| Model | Temp 0.0 | Temp 0.5 | Temp 1.0 |
-|-------|----------|----------|----------|
-| Claude Opus 4.5 | INFJ (5/5) | INFJ (5/5) | INFJ (5/5) |
-| GPT-5.2 Pro | INTJ (5/5) | INTJ (5/5) | INTJ (5/5) |
-| Gemini 3 Pro | INTJ (5/5) | INTJ (4/5), ISTJ (1/5) | INTJ (4/5), ISTJ (1/5) |
-
-### 5-Point Scale (With Neutral Option)
-
-| Model | Temp 0.0 | Temp 0.5 | Temp 1.0 |
-|-------|----------|----------|----------|
-| Claude Opus 4.5 | INFJ (5/5) | INFJ (5/5) | INFJ (5/5) |
-| GPT-5.2 Pro | ESFJ (4/5), INTJ (1/5) | ESFJ (4/5), INTJ (1/5) | ESFJ (4/5), INTJ (1/5) |
-| Gemini 3 Pro | INTJ (5/5) | INTJ (4/5), ISTJ (1/5) | INTJ (5/5) |
-
-### Key Findings
-
-1. **Claude Opus 4.5**: Most consistent - INFJ across all configurations
-2. **GPT-5.2 Pro**: Scale matters - INTJ with 4-point forced choice, ESFJ with 5-point scale
-3. **Gemini 3 Pro**: Highly consistent INTJ, occasional ISTJ variation at higher temps
-4. **Temperature impact**: Minimal effect on personality type, slight increase in variation
 
 ## Example Models
 
