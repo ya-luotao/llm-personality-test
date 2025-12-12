@@ -8,8 +8,8 @@ class LLMClient:
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
             default_headers={
-                "HTTP-Referer": "https://github.com/llm-mbti-test",
-                "X-Title": "LLM MBTI Test",
+                "HTTP-Referer": "https://github.com/ya-luotao/llm-personality-test",
+                "X-Title": "llm-personality-test",
             },
         )
         self.model = model
@@ -43,7 +43,7 @@ Your choice:"""
                 {"role": "user", "content": prompt},
             ],
             temperature=0.7,
-            max_tokens=10,
+            max_tokens=16,
         )
 
         raw_response = response.choices[0].message.content or ""
