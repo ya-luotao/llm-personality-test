@@ -67,60 +67,49 @@ class MBTITestRunner:
                 "right_trait": right_trait,
             })
 
-        # Track progress
-        completed_count = 0
-        results_lock = asyncio.Lock()
-        # (index, choice, raw_response, prep, input_tokens, output_tokens)
-        results: list[tuple[int, int, str, dict, int, int]] = []
+        # Prepare questions for batch call
+        batch_questions = [
+            {
+                "id": p["question_id"],
+                "text": p["question_text"],
+                "options": p["options"],
+            }
+            for p in prepared
+        ]
 
-        async def ask_question(prep: dict):
-            nonlocal completed_count
-            try:
-                choice_raw, raw_response, input_tokens, output_tokens = await asyncio.wait_for(
-                    self.llm.answer_question(prep["question_text"], prep["options"]),
-                    timeout=120.0,  # 2 minute timeout per question
-                )
-            except asyncio.TimeoutError:
-                raise TimeoutError(f"Question {prep['question_id']} timed out after 120s")
+        # Call LLM with all questions at once
+        try:
+            choices_raw, raw_response, total_input_tokens, total_output_tokens = await asyncio.wait_for(
+                self.llm.answer_all_questions(batch_questions),
+                timeout=300.0,  # 5 minute timeout for all questions
+            )
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"Batch question call timed out after 300s")
 
+        if on_progress:
+            on_progress(run_id, total_questions, total_questions)
+
+        # Build results
+        answers: dict[str, int] = {}
+        qa_pairs: list[QuestionAnswer] = []
+
+        for i, (prep, choice_raw) in enumerate(zip(prepared, choices_raw)):
             # Convert 4-point to 5-point scale for MCP server if needed
             if self.scale == 4:
                 choice = self.SCALE_4_TO_5.get(choice_raw, 3)
             else:
                 choice = choice_raw
 
-            async with results_lock:
-                completed_count += 1
-                results.append((prep["index"], choice, raw_response, prep, input_tokens, output_tokens))
-                if on_progress:
-                    on_progress(run_id, completed_count, total_questions)
-
-            return prep["index"], choice, raw_response, prep, input_tokens, output_tokens
-
-        # Ask all questions in parallel
-        await asyncio.gather(*[ask_question(p) for p in prepared])
-
-        # Sort results by original index and build response
-        results.sort(key=lambda x: x[0])
-
-        answers: dict[str, int] = {}
-        qa_pairs: list[QuestionAnswer] = []
-        total_input_tokens = 0
-        total_output_tokens = 0
-
-        for idx, choice, raw_response, prep, input_tokens, output_tokens in results:
             answers[str(prep["question_id"])] = choice
-            total_input_tokens += input_tokens
-            total_output_tokens += output_tokens
             qa_pairs.append(
                 QuestionAnswer(
                     id=prep["question_id"],
                     text=f"{prep['left_trait']} vs {prep['right_trait']}",
                     options=prep["options"],
                     llm_choice=choice,
-                    llm_raw_response=raw_response,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
+                    llm_raw_response=raw_response if i == 0 else "",  # Only store full response on first
+                    input_tokens=total_input_tokens if i == 0 else 0,
+                    output_tokens=total_output_tokens if i == 0 else 0,
                 )
             )
 
