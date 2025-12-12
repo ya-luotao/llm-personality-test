@@ -80,6 +80,43 @@ uv run python run_all.py \
 | `-p, --parallel` | Concurrent runs | 3 |
 | `-c, --continue` | Resume existing | false |
 
+### Analyze Results
+
+```bash
+# Analyze a batch run
+uv run python report.py experiment001
+
+# Analyze specific model in a batch
+uv run python report.py experiment001 -m gpt-4o
+
+# Analyze a single result file
+uv run python report.py results/openai_gpt-4o_20241212.json
+```
+
+**Report includes:**
+- MBTI type distribution with histogram
+- Choice table showing each question's answers across runs
+- Consistency analysis (most/least consistent questions)
+- Dimension score analysis with averages and std dev
+- Multi-model comparison (when analyzing batch runs)
+
+**Example output:**
+```
+--- Choices by Question ---
+Question                       | R1 R2 R3 R4 R5 | Mode | Agr%
+--------------------------------------------------------------
+Extraversion vs Introversion   |  4  4  4  3  4 |  4   |  80%
+Sensing vs Intuition           |  5  5  4  5  5 |  5   |  80%
+Thinking vs Feeling            |  2  2  2  2  3 |  2   |  80%
+
+--- Consistency Analysis ---
+Overall consistency: 76.5%
+
+Most inconsistent questions:
+  40.0% | Judging vs Perceiving              | 3 4 2 5 3
+  60.0% | Sensing vs Intuition               | 4 5 4 5 4
+```
+
 ## Output
 
 ### Single Model Output
