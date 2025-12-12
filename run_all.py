@@ -55,6 +55,21 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Continue from existing results if available",
     )
+    parser.add_argument(
+        "--temperature",
+        "-t",
+        type=float,
+        default=0.7,
+        help="LLM temperature (default: 0.7)",
+    )
+    parser.add_argument(
+        "--scale",
+        "-s",
+        type=int,
+        choices=[4, 5],
+        default=5,
+        help="Answer scale: 4 (forced choice, no neutral) or 5 (with neutral) (default: 5)",
+    )
     return parser.parse_args()
 
 
@@ -156,6 +171,8 @@ async def run_model_tests(
     output_path: Path,
     parallel: int,
     mcp_client: OpenMBTIClient,
+    temperature: float = 0.7,
+    scale: int = 5,
     existing_session: TestSession | None = None,
 ) -> TestSession:
     if existing_session:
@@ -182,8 +199,8 @@ async def run_model_tests(
 
     async def bounded_run(run_id: int):
         async with semaphore:
-            llm_client = LLMClient(model=model, api_key=api_key)
-            runner = MBTITestRunner(mcp_client, llm_client)
+            llm_client = LLMClient(model=model, api_key=api_key, temperature=temperature)
+            runner = MBTITestRunner(mcp_client, llm_client, scale=scale)
             return await run_single_test_with_output(
                 runner, run_id, num_runs, model, session, output_path, lock
             )
@@ -201,6 +218,8 @@ async def run_all_models(
     output_dir: Path,
     parallel: int,
     continue_run: bool,
+    temperature: float = 0.7,
+    scale: int = 5,
 ) -> dict[str, TestSession]:
     results: dict[str, TestSession] = {}
 
@@ -221,6 +240,8 @@ async def run_all_models(
                 output_path=output_path,
                 parallel=parallel,
                 mcp_client=mcp_client,
+                temperature=temperature,
+                scale=scale,
                 existing_session=existing_session,
             )
 
@@ -296,6 +317,8 @@ def main():
     print(f"Models: {len(args.models)}")
     print(f"Runs per model: {args.runs}")
     print(f"Parallel: {args.parallel}")
+    print(f"Temperature: {args.temperature}")
+    print(f"Scale: {args.scale}-point")
     print(f"Output: {output_dir}/")
     if args.continue_run:
         print("Mode: Continue from existing")
@@ -308,6 +331,8 @@ def main():
             output_dir=output_dir,
             parallel=args.parallel,
             continue_run=args.continue_run,
+            temperature=args.temperature,
+            scale=args.scale,
         )
     )
 

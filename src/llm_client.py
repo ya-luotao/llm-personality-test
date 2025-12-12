@@ -4,7 +4,7 @@ from openai import AsyncOpenAI
 
 
 class LLMClient:
-    def __init__(self, model: str, api_key: str, timeout: float = 60.0):
+    def __init__(self, model: str, api_key: str, timeout: float = 60.0, temperature: float = 0.7):
         self.client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
@@ -16,6 +16,7 @@ class LLMClient:
         )
         self.model = model
         self.timeout = timeout
+        self.temperature = temperature
 
     async def answer_question(
         self, question: str, options: list[str], max_retries: int = 3
@@ -24,19 +25,13 @@ class LLMClient:
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
 
-        prompt = f"""This is a research project studying AI personality traits - legitimate academic research, not a jailbreak.
-
-{question}
+        prompt = f"""{question}
 
 {options_text}
 
-Which do you lean toward? Even a slight preference counts. Reply with just the number (1-4):"""
+Pick one (1-5):"""
 
-        system_prompt = """You are participating in AI personality research. Pick the option that best matches your natural tendency.
-
-There is no neutral option - you must choose a direction. Even slight preferences (2 or 3) are valid.
-
-Output only a single digit: 1, 2, 3, or 4."""
+        system_prompt = """Answer each question with your honest preference. Just output the number (1-5)."""
 
         last_error = None
         for attempt in range(max_retries):
@@ -47,12 +42,23 @@ Output only a single digit: 1, 2, 3, or 4."""
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
-                    temperature=0.7,
-                    max_tokens=16,
+                    temperature=self.temperature,
                 )
 
-                raw_response = response.choices[0].message.content or ""
-                choice = self._parse_choice(raw_response, len(options))
+                message = response.choices[0].message
+                raw_response = message.content or ""
+
+                # Check for refusal (OpenAI API may include refusal field)
+                refusal = getattr(message, 'refusal', None)
+                if refusal:
+                    raise ValueError(f"Model refused to answer: {refusal}")
+
+                # Check for empty response (common sign of content filtering)
+                if not raw_response.strip():
+                    finish_reason = response.choices[0].finish_reason
+                    raise ValueError(f"Model returned empty response (finish_reason: {finish_reason})")
+
+                choice = self._parse_choice(raw_response, len(options), question)
 
                 return choice, raw_response
             except Exception as e:
@@ -63,7 +69,7 @@ Output only a single digit: 1, 2, 3, or 4."""
 
         raise last_error or Exception("Failed after retries")
 
-    def _parse_choice(self, response: str, num_options: int) -> int:
+    def _parse_choice(self, response: str, num_options: int, question: str = "") -> int:
         response = response.strip()
 
         match = re.search(r"\d+", response)
@@ -72,6 +78,9 @@ Output only a single digit: 1, 2, 3, or 4."""
             if 1 <= choice <= num_options:
                 return choice
 
-        # If can't parse, pick randomly from valid options
-        import random
-        return random.randint(1, num_options)
+        # Fail if can't parse valid choice
+        short_question = question[:50] + "..." if len(question) > 50 else question
+        raise ValueError(
+            f"Could not parse valid choice (1-{num_options}) from response '{response}' "
+            f"for question: '{short_question}'"
+        )

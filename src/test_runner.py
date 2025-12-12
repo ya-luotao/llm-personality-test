@@ -8,9 +8,13 @@ from .llm_client import LLMClient
 
 
 class MBTITestRunner:
-    def __init__(self, mcp_client: OpenMBTIClient, llm_client: LLMClient):
+    # Map 4-point scale to 5-point: 1->1, 2->2, 3->4, 4->5
+    SCALE_4_TO_5 = {1: 1, 2: 2, 3: 4, 4: 5}
+
+    def __init__(self, mcp_client: OpenMBTIClient, llm_client: LLMClient, scale: int = 5):
         self.mcp = mcp_client
         self.llm = llm_client
+        self.scale = scale
 
     async def run_single_test(
         self,
@@ -36,13 +40,23 @@ class MBTITestRunner:
 
             question_text = f"Between {left_trait} and {right_trait}, which do you lean toward?"
 
-            # 4-point scale - NO neutral option
-            options = [
-                f"1 - Strongly {left_trait}",
-                f"2 - Slightly {left_trait}",
-                f"3 - Slightly {right_trait}",
-                f"4 - Strongly {right_trait}",
-            ]
+            if self.scale == 5:
+                # 5-point scale with neutral option
+                options = [
+                    f"1 - Strongly {left_trait}",
+                    f"2 - Slightly {left_trait}",
+                    f"3 - Neutral (no preference)",
+                    f"4 - Slightly {right_trait}",
+                    f"5 - Strongly {right_trait}",
+                ]
+            else:
+                # 4-point scale - forced choice, no neutral
+                options = [
+                    f"1 - Strongly {left_trait}",
+                    f"2 - Slightly {left_trait}",
+                    f"3 - Slightly {right_trait}",
+                    f"4 - Strongly {right_trait}",
+                ]
 
             prepared.append({
                 "index": i,
@@ -58,16 +72,17 @@ class MBTITestRunner:
         results_lock = asyncio.Lock()
         results: list[tuple[int, int, str, dict]] = []  # (index, choice, raw_response, prepared)
 
-        # Map 4-point scale to 5-point: 1->1, 2->2, 3->4, 4->5
-        scale_map = {1: 1, 2: 2, 3: 4, 4: 5}
-
         async def ask_question(prep: dict):
             nonlocal completed_count
-            choice_4pt, raw_response = await self.llm.answer_question(
+            choice_raw, raw_response = await self.llm.answer_question(
                 prep["question_text"], prep["options"]
             )
-            # Convert 4-point to 5-point scale
-            choice = scale_map.get(choice_4pt, 3)
+
+            # Convert 4-point to 5-point scale for MCP server if needed
+            if self.scale == 4:
+                choice = self.SCALE_4_TO_5.get(choice_raw, 3)
+            else:
+                choice = choice_raw
 
             async with results_lock:
                 completed_count += 1

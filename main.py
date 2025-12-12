@@ -49,6 +49,21 @@ def parse_args() -> argparse.Namespace:
         default=3,
         help="Number of parallel runs (default: 3)",
     )
+    parser.add_argument(
+        "--temperature",
+        "-t",
+        type=float,
+        default=0.7,
+        help="LLM temperature (default: 0.7)",
+    )
+    parser.add_argument(
+        "--scale",
+        "-s",
+        type=int,
+        choices=[4, 5],
+        default=5,
+        help="Answer scale: 4 (forced choice, no neutral) or 5 (with neutral) (default: 5)",
+    )
     return parser.parse_args()
 
 
@@ -149,6 +164,8 @@ async def run_tests(
     api_key: str,
     output_path: Path,
     parallel: int,
+    temperature: float = 0.7,
+    scale: int = 5,
     existing_session: TestSession | None = None,
 ) -> TestSession:
     if existing_session:
@@ -174,8 +191,8 @@ async def run_tests(
 
     async def bounded_run(mcp_client: OpenMBTIClient, run_id: int):
         async with semaphore:
-            llm_client = LLMClient(model=model, api_key=api_key)
-            runner = MBTITestRunner(mcp_client, llm_client)
+            llm_client = LLMClient(model=model, api_key=api_key, temperature=temperature)
+            runner = MBTITestRunner(mcp_client, llm_client, scale=scale)
             return await run_single_test_with_output(
                 runner, run_id, num_runs, session, output_path, lock
             )
@@ -201,6 +218,8 @@ def main():
     print(f"Model: {args.model}")
     print(f"Runs: {args.runs}")
     print(f"Parallel: {args.parallel}")
+    print(f"Temperature: {args.temperature}")
+    print(f"Scale: {args.scale}-point")
 
     existing_session = None
     if args.continue_from:
@@ -222,6 +241,8 @@ def main():
             api_key,
             output_path,
             args.parallel,
+            args.temperature,
+            args.scale,
             existing_session,
         )
     )
