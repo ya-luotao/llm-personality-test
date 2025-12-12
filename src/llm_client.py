@@ -25,13 +25,14 @@ class LLMClient:
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
 
+        num_options = len(options)
         prompt = f"""{question}
 
 {options_text}
 
-Pick one (1-5):"""
+Pick one (1-{num_options}):"""
 
-        system_prompt = """Answer each question with your honest preference. Just output the number (1-5)."""
+        system_prompt = f"""Answer each question with your honest preference. Just output the number (1-{num_options})."""
 
         last_error = None
         for attempt in range(max_retries):
