@@ -1,9 +1,10 @@
+import asyncio
 import re
 from openai import AsyncOpenAI
 
 
 class LLMClient:
-    def __init__(self, model: str, api_key: str):
+    def __init__(self, model: str, api_key: str, timeout: float = 60.0):
         self.client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
@@ -11,10 +12,14 @@ class LLMClient:
                 "HTTP-Referer": "https://github.com/ya-luotao/llm-personality-test",
                 "X-Title": "llm-personality-test",
             },
+            timeout=timeout,
         )
         self.model = model
+        self.timeout = timeout
 
-    async def answer_question(self, question: str, options: list[str]) -> tuple[int, str]:
+    async def answer_question(
+        self, question: str, options: list[str], max_retries: int = 3
+    ) -> tuple[int, str]:
         options_text = "\n".join(
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
@@ -33,23 +38,33 @@ Instructions:
 
 Your choice:"""
 
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are taking a personality test. Answer questions honestly based on how you would naturally respond. Only output the number of your choice.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.7,
-            max_tokens=16,
-        )
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are taking a personality test. Answer questions honestly based on how you would naturally respond. Only output the number of your choice.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.7,
+                    max_tokens=16,
+                )
 
-        raw_response = response.choices[0].message.content or ""
-        choice = self._parse_choice(raw_response, len(options))
+                raw_response = response.choices[0].message.content or ""
+                choice = self._parse_choice(raw_response, len(options))
 
-        return choice, raw_response
+                return choice, raw_response
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # 1s, 2s, 4s
+                    await asyncio.sleep(wait_time)
+
+        raise last_error or Exception("Failed after retries")
 
     def _parse_choice(self, response: str, num_options: int) -> int:
         response = response.strip()
