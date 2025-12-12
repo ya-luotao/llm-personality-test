@@ -120,25 +120,30 @@ async def run_single_test_with_output(
     output_path: Path,
     lock: asyncio.Lock,
 ) -> TestResult | None:
+    choices_so_far: list[str] = []
+
+    def on_progress(rid: int, q_num: int, choice: int):
+        choices_so_far.append(str(choice))
+        # Print progress: run_id and choices so far
+        progress_str = f"\r[Run {rid}/{total_runs}] Q{q_num}: {' '.join(choices_so_far)}"
+        print(progress_str, end="", flush=True)
+
     try:
-        result = await runner.run_single_test(run_id=run_id)
+        result = await runner.run_single_test(run_id=run_id, on_progress=on_progress)
 
         async with lock:
             session.runs.append(result)
             save_session(session, output_path)
 
             completed = len(session.runs)
-            print(f"\n[Run {run_id}/{total_runs}] Completed: {result.mbti_type}")
-            print(f"  Progress: {completed}/{total_runs} runs saved")
-
-            print(f"  Choices: ", end="")
-            choices = [str(q.llm_choice) for q in result.questions[:10]]
-            print(" ".join(choices) + ("..." if len(result.questions) > 10 else ""))
+            # Clear line and print final result
+            print(f"\r[Run {run_id}/{total_runs}] {result.mbti_type} | {' '.join(choices_so_far)}")
+            print(f"  Saved: {completed}/{total_runs} runs")
 
         return result
     except Exception as e:
         async with lock:
-            print(f"\n[Run {run_id}/{total_runs}] Error: {e}", file=sys.stderr)
+            print(f"\r[Run {run_id}/{total_runs}] Error: {e}", file=sys.stderr)
         return None
 
 

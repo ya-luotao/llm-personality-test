@@ -125,22 +125,28 @@ async def run_single_test_with_output(
     output_path: Path,
     lock: asyncio.Lock,
 ) -> TestResult | None:
+    short_model = model.split("/")[-1]
+    choices_so_far: list[str] = []
+
+    def on_progress(rid: int, q_num: int, choice: int):
+        choices_so_far.append(str(choice))
+        progress_str = f"\r  [{short_model}] Run {rid}: Q{q_num} {' '.join(choices_so_far)}"
+        print(progress_str, end="", flush=True)
+
     try:
-        result = await runner.run_single_test(run_id=run_id)
+        result = await runner.run_single_test(run_id=run_id, on_progress=on_progress)
 
         async with lock:
             session.runs.append(result)
             save_session(session, output_path)
 
             completed = len(session.runs)
-            short_model = model.split("/")[-1]
-            print(f"  [{short_model}] Run {run_id}: {result.mbti_type} ({completed}/{total_runs})")
+            print(f"\r  [{short_model}] Run {run_id}: {result.mbti_type} | {' '.join(choices_so_far)} ({completed}/{total_runs})")
 
         return result
     except Exception as e:
         async with lock:
-            short_model = model.split("/")[-1]
-            print(f"  [{short_model}] Run {run_id}: Error - {e}", file=sys.stderr)
+            print(f"\r  [{short_model}] Run {run_id}: Error - {e}", file=sys.stderr)
         return None
 
 

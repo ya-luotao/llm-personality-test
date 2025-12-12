@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 from .models import QuestionAnswer, TestResult
 from .mcp_client import OpenMBTIClient
@@ -11,13 +11,24 @@ class MBTITestRunner:
         self.mcp = mcp_client
         self.llm = llm_client
 
-    async def run_single_test(self, run_id: int) -> TestResult:
+    async def run_single_test(
+        self,
+        run_id: int,
+        on_progress: Callable[[int, int, int], None] | None = None,
+    ) -> TestResult:
+        """
+        Run a single MBTI test.
+
+        Args:
+            run_id: The run identifier
+            on_progress: Optional callback(run_id, question_num, choice) called after each question
+        """
         questions = await self.mcp.get_questions()
 
         answers: dict[str, int] = {}
         qa_pairs: list[QuestionAnswer] = []
 
-        for q in questions:
+        for i, q in enumerate(questions, 1):
             question_id = q.get("id", 0)
             left_trait = q.get("leftTrait", "")
             right_trait = q.get("rightTrait", "")
@@ -33,6 +44,9 @@ class MBTITestRunner:
             ]
 
             choice, raw_response = self.llm.answer_question(question_text, options)
+
+            if on_progress:
+                on_progress(run_id, i, choice)
 
             answers[str(question_id)] = choice
             qa_pairs.append(
