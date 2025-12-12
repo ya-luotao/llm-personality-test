@@ -1,4 +1,4 @@
-# LLM MBTI Test
+# LLM Personality Test
 
 Run MBTI personality tests on LLMs via the [OpenMBTI](https://openmbti.org) MCP server using [OpenRouter](https://openrouter.ai) as the LLM gateway.
 

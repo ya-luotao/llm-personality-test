@@ -285,7 +285,7 @@ def main():
     output_dir = get_output_dir(args.run_id)
 
     print("=" * 60)
-    print("LLM MBTI Test - Batch Run")
+    print("LLM Personality Test - Batch Run")
     print("=" * 60)
     print(f"Run ID: {args.run_id}")
     print(f"Models: {len(args.models)}")

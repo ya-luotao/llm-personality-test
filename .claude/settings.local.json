@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv init:*)",
+      "WebSearch",
+      "WebFetch(domain:mcp.openmbti.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:openmbti.org)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(uv sync:*)",
+      "Bash(uv run python:*)",
+      "Bash(env)",
+      "Bash(dig:*)",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd LLM MBTI test program\n\nCLI tool that runs MBTI personality tests on LLMs via the OpenMBTI MCP\nserver using OpenRouter as the LLM gateway.\n\nFeatures:\n- Connect to OpenMBTI MCP server (Streamable HTTP transport)\n- Support any model available on OpenRouter\n- Run multiple test iterations for statistical analysis\n- Save detailed results to JSON (all Q&A pairs, MBTI type, scores)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
+    ]
+  }
+}

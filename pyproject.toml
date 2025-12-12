@@ -1,5 +1,5 @@
 [project]
-name = "llm-mbti-test"
+name = "llm-personality-test"
 version = "0.1.0"
 description = "Run MBTI personality tests on LLMs via OpenMBTI MCP server"
 readme = "README.md"
@@ -12,4 +12,4 @@ dependencies = [
 ]
 
 [project.scripts]
-llm-mbti = "main:main"
+llm-personality-test = "main:main"

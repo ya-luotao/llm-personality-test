@@ -417,7 +417,7 @@ wheels = [
 ]
 
 [[package]]
-name = "llm-mbti-test"
+name = "llm-personality-test"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
