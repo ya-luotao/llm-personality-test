@@ -43,7 +43,7 @@ Pick one (1-5):"""
                         {"role": "user", "content": prompt},
                     ],
                     temperature=self.temperature,
-                    max_tokens=1024,  # Allow room for very verbose reasoning (Gemini)
+                    max_tokens=10240,  # High limit for very verbose models like Gemini
                 )
 
                 message = response.choices[0].message
