@@ -74,9 +74,13 @@ class MBTITestRunner:
 
         async def ask_question(prep: dict):
             nonlocal completed_count
-            choice_raw, raw_response = await self.llm.answer_question(
-                prep["question_text"], prep["options"]
-            )
+            try:
+                choice_raw, raw_response = await asyncio.wait_for(
+                    self.llm.answer_question(prep["question_text"], prep["options"]),
+                    timeout=120.0,  # 2 minute timeout per question
+                )
+            except asyncio.TimeoutError:
+                raise TimeoutError(f"Question {prep['question_id']} timed out after 120s")
 
             # Convert 4-point to 5-point scale for MCP server if needed
             if self.scale == 4:

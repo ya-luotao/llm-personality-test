@@ -1,3 +1,4 @@
+import asyncio
 import json
 from contextlib import AsyncExitStack
 from typing import Any
@@ -16,10 +17,12 @@ def create_mcp_http_client(**kwargs) -> httpx.AsyncClient:
 
 
 class OpenMBTIClient:
-    def __init__(self, server_url: str = MCP_SERVER_URL):
+    def __init__(self, server_url: str = MCP_SERVER_URL, call_timeout: float = 60.0):
         self.server_url = server_url
         self.session: ClientSession | None = None
         self._exit_stack: AsyncExitStack | None = None
+        self._lock = asyncio.Lock()
+        self._call_timeout = call_timeout
 
     async def connect(self) -> None:
         self._exit_stack = AsyncExitStack()
@@ -53,7 +56,14 @@ class OpenMBTIClient:
         if not self.session:
             raise RuntimeError("Not connected to MCP server")
 
-        result = await self.session.call_tool(name, arguments or {})
+        async with self._lock:
+            try:
+                result = await asyncio.wait_for(
+                    self.session.call_tool(name, arguments or {}),
+                    timeout=self._call_timeout,
+                )
+            except asyncio.TimeoutError:
+                raise TimeoutError(f"MCP call '{name}' timed out after {self._call_timeout}s")
 
         if result.content:
             for content in result.content:
