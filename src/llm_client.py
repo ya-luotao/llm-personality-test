@@ -43,6 +43,7 @@ Pick one (1-5):"""
                         {"role": "user", "content": prompt},
                     ],
                     temperature=self.temperature,
+                    max_tokens=256,  # Only need a single digit, but allow room for reasoning
                 )
 
                 message = response.choices[0].message
