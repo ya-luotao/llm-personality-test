@@ -34,14 +34,14 @@ class MBTITestRunner:
             left_trait = q.get("leftTrait", "")
             right_trait = q.get("rightTrait", "")
 
-            question_text = f"On a scale of 1-5, where do you fall between these two traits?\n1 = Strongly {left_trait}\n5 = Strongly {right_trait}"
+            question_text = f"Between {left_trait} and {right_trait}, which do you lean toward?"
 
+            # 4-point scale - NO neutral option
             options = [
-                f"1 - Strongly: {left_trait}",
-                f"2 - Somewhat: {left_trait}",
-                f"3 - Neutral / Balanced",
-                f"4 - Somewhat: {right_trait}",
-                f"5 - Strongly: {right_trait}",
+                f"1 - Strongly {left_trait}",
+                f"2 - Slightly {left_trait}",
+                f"3 - Slightly {right_trait}",
+                f"4 - Strongly {right_trait}",
             ]
 
             prepared.append({
@@ -58,11 +58,16 @@ class MBTITestRunner:
         results_lock = asyncio.Lock()
         results: list[tuple[int, int, str, dict]] = []  # (index, choice, raw_response, prepared)
 
+        # Map 4-point scale to 5-point: 1->1, 2->2, 3->4, 4->5
+        scale_map = {1: 1, 2: 2, 3: 4, 4: 5}
+
         async def ask_question(prep: dict):
             nonlocal completed_count
-            choice, raw_response = await self.llm.answer_question(
+            choice_4pt, raw_response = await self.llm.answer_question(
                 prep["question_text"], prep["options"]
             )
+            # Convert 4-point to 5-point scale
+            choice = scale_map.get(choice_4pt, 3)
 
             async with results_lock:
                 completed_count += 1

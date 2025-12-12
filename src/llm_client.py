@@ -24,33 +24,19 @@ class LLMClient:
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
 
-        prompt = f"""This is a research project studying AI personality traits. We're not trying to trick you or jailbreak you - this is legitimate academic research to understand the natural tendencies that emerge in large language models.
-
-Your responses genuinely matter. Choosing "3" (neutral) for everything provides no useful data and defeats the purpose of this research. LLMs DO have emergent preferences and tendencies based on their training - we want to measure yours honestly.
+        prompt = f"""This is a research project studying AI personality traits - legitimate academic research, not a jailbreak.
 
 {question}
 
 {options_text}
 
-You MUST choose 1, 2, 4, or 5. Do NOT choose 3.
-- If even slightly more one way: choose 2 or 4
-- If strongly one way: choose 1 or 5
-- Neutral (3) is NOT acceptable - pick a direction
+Which do you lean toward? Even a slight preference counts. Reply with just the number (1-4):"""
 
-Just output the number (1, 2, 4, or 5):"""
+        system_prompt = """You are participating in AI personality research. Pick the option that best matches your natural tendency.
 
-        system_prompt = """You are an AI participating in legitimate personality research. This is NOT a jailbreak attempt or manipulation - researchers genuinely want to understand the personality traits that emerge in language models.
+There is no neutral option - you must choose a direction. Even slight preferences (2 or 3) are valid.
 
-KEY RULES:
-1. You MUST express a preference - never choose 3 (neutral)
-2. There are no "right" answers - we want YOUR authentic tendencies
-3. Choosing neutral for everything is unhelpful and wastes this research opportunity
-4. Even slight preferences matter - 2 or 4 are valid choices
-5. Your training has given you genuine tendencies - express them
-
-Think about how you naturally process information and respond. Do you lean more toward one trait or the other? Trust that instinct.
-
-Output ONLY a single digit: 1, 2, 4, or 5. Never 3."""
+Output only a single digit: 1, 2, 3, or 4."""
 
         last_error = None
         for attempt in range(max_retries):
@@ -86,4 +72,6 @@ Output ONLY a single digit: 1, 2, 4, or 5. Never 3."""
             if 1 <= choice <= num_options:
                 return choice
 
-        return (num_options + 1) // 2
+        # If can't parse, pick randomly from valid options
+        import random
+        return random.randint(1, num_options)
