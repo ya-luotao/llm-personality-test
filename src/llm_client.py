@@ -1,10 +1,10 @@
 import re
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 
 class LLMClient:
     def __init__(self, model: str, api_key: str):
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
             default_headers={
@@ -14,7 +14,7 @@ class LLMClient:
         )
         self.model = model
 
-    def answer_question(self, question: str, options: list[str]) -> tuple[int, str]:
+    async def answer_question(self, question: str, options: list[str]) -> tuple[int, str]:
         options_text = "\n".join(
             f"{i + 1}. {opt}" for i, opt in enumerate(options)
         )
@@ -33,7 +33,7 @@ Instructions:
 
 Your choice:"""
 
-        response = self.client.chat.completions.create(
+        response = await self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {

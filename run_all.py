@@ -126,11 +126,9 @@ async def run_single_test_with_output(
     lock: asyncio.Lock,
 ) -> TestResult | None:
     short_model = model.split("/")[-1]
-    choices_so_far: list[str] = []
 
-    def on_progress(rid: int, q_num: int, choice: int):
-        choices_so_far.append(str(choice))
-        progress_str = f"\r  [{short_model}] Run {rid}: Q{q_num} {' '.join(choices_so_far)}"
+    def on_progress(rid: int, completed: int, total: int):
+        progress_str = f"\r  [{short_model}] Run {rid}: {completed}/{total}"
         print(progress_str, end="", flush=True)
 
     try:
@@ -140,8 +138,9 @@ async def run_single_test_with_output(
             session.runs.append(result)
             save_session(session, output_path)
 
-            completed = len(session.runs)
-            print(f"\r  [{short_model}] Run {run_id}: {result.mbti_type} | {' '.join(choices_so_far)} ({completed}/{total_runs})")
+            runs_completed = len(session.runs)
+            choices = " ".join(str(q.llm_choice) for q in result.questions)
+            print(f"\r  [{short_model}] Run {run_id}: {result.mbti_type} | {choices} ({runs_completed}/{total_runs})")
 
         return result
     except Exception as e:

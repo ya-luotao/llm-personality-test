@@ -120,12 +120,8 @@ async def run_single_test_with_output(
     output_path: Path,
     lock: asyncio.Lock,
 ) -> TestResult | None:
-    choices_so_far: list[str] = []
-
-    def on_progress(rid: int, q_num: int, choice: int):
-        choices_so_far.append(str(choice))
-        # Print progress: run_id and choices so far
-        progress_str = f"\r[Run {rid}/{total_runs}] Q{q_num}: {' '.join(choices_so_far)}"
+    def on_progress(rid: int, completed: int, total: int):
+        progress_str = f"\r[Run {rid}/{total_runs}] Answering: {completed}/{total}"
         print(progress_str, end="", flush=True)
 
     try:
@@ -135,10 +131,10 @@ async def run_single_test_with_output(
             session.runs.append(result)
             save_session(session, output_path)
 
-            completed = len(session.runs)
-            # Clear line and print final result
-            print(f"\r[Run {run_id}/{total_runs}] {result.mbti_type} | {' '.join(choices_so_far)}")
-            print(f"  Saved: {completed}/{total_runs} runs")
+            runs_completed = len(session.runs)
+            choices = " ".join(str(q.llm_choice) for q in result.questions)
+            print(f"\r[Run {run_id}/{total_runs}] {result.mbti_type} | {choices}")
+            print(f"  Saved: {runs_completed}/{total_runs} runs")
 
         return result
     except Exception as e:

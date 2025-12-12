@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -17,18 +18,18 @@ class MBTITestRunner:
         on_progress: Callable[[int, int, int], None] | None = None,
     ) -> TestResult:
         """
-        Run a single MBTI test.
+        Run a single MBTI test with parallel question answering.
 
         Args:
             run_id: The run identifier
-            on_progress: Optional callback(run_id, question_num, choice) called after each question
+            on_progress: Optional callback(run_id, completed_count, total) called after each question
         """
         questions = await self.mcp.get_questions()
+        total_questions = len(questions)
 
-        answers: dict[str, int] = {}
-        qa_pairs: list[QuestionAnswer] = []
-
-        for i, q in enumerate(questions, 1):
+        # Prepare all questions
+        prepared = []
+        for i, q in enumerate(questions):
             question_id = q.get("id", 0)
             left_trait = q.get("leftTrait", "")
             right_trait = q.get("rightTrait", "")
@@ -43,17 +44,50 @@ class MBTITestRunner:
                 f"5 - Strongly: {right_trait}",
             ]
 
-            choice, raw_response = self.llm.answer_question(question_text, options)
+            prepared.append({
+                "index": i,
+                "question_id": question_id,
+                "question_text": question_text,
+                "options": options,
+                "left_trait": left_trait,
+                "right_trait": right_trait,
+            })
 
-            if on_progress:
-                on_progress(run_id, i, choice)
+        # Track progress
+        completed_count = 0
+        results_lock = asyncio.Lock()
+        results: list[tuple[int, int, str, dict]] = []  # (index, choice, raw_response, prepared)
 
-            answers[str(question_id)] = choice
+        async def ask_question(prep: dict):
+            nonlocal completed_count
+            choice, raw_response = await self.llm.answer_question(
+                prep["question_text"], prep["options"]
+            )
+
+            async with results_lock:
+                completed_count += 1
+                results.append((prep["index"], choice, raw_response, prep))
+                if on_progress:
+                    on_progress(run_id, completed_count, total_questions)
+
+            return prep["index"], choice, raw_response, prep
+
+        # Ask all questions in parallel
+        await asyncio.gather(*[ask_question(p) for p in prepared])
+
+        # Sort results by original index and build response
+        results.sort(key=lambda x: x[0])
+
+        answers: dict[str, int] = {}
+        qa_pairs: list[QuestionAnswer] = []
+
+        for idx, choice, raw_response, prep in results:
+            answers[str(prep["question_id"])] = choice
             qa_pairs.append(
                 QuestionAnswer(
-                    id=question_id,
-                    text=f"{left_trait} vs {right_trait}",
-                    options=options,
+                    id=prep["question_id"],
+                    text=f"{prep['left_trait']} vs {prep['right_trait']}",
+                    options=prep["options"],
                     llm_choice=choice,
                     llm_raw_response=raw_response,
                 )
