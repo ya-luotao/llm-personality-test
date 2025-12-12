@@ -35,6 +35,9 @@ uv run python main.py -m openai/gpt-4o
 # Multiple runs with parallel execution
 uv run python main.py -m openai/gpt-4o --runs 10 --parallel 5
 
+# Low temperature with 4-point forced choice scale
+uv run python main.py -m openai/gpt-4o --runs 10 -t 0.3 -s 4
+
 # Continue interrupted run
 uv run python main.py -m openai/gpt-4o --runs 10 -c results/openai_gpt-4o_20241212.json
 ```
@@ -46,6 +49,8 @@ uv run python main.py -m openai/gpt-4o --runs 10 -c results/openai_gpt-4o_202412
 | `-m, --model` | OpenRouter model ID | required |
 | `-r, --runs` | Number of test runs | 1 |
 | `-p, --parallel` | Concurrent runs | 3 |
+| `-t, --temperature` | LLM temperature | 0.7 |
+| `-s, --scale` | Answer scale: 4 (forced) or 5 (neutral) | 5 |
 | `-o, --output` | Output JSON path | auto-generated |
 | `-c, --continue-from` | Resume from file | - |
 
@@ -78,6 +83,8 @@ uv run python run_all.py \
 | `-id, --run-id` | Batch identifier | timestamp |
 | `-r, --runs` | Runs per model | 5 |
 | `-p, --parallel` | Concurrent runs | 3 |
+| `-t, --temperature` | LLM temperature | 0.7 |
+| `-s, --scale` | Answer scale: 4 (forced) or 5 (neutral) | 5 |
 | `-c, --continue` | Resume existing | false |
 
 ### Analyze Results
